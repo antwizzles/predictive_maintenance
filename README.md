@@ -8,7 +8,7 @@ Predicting how many operating cycles remain before a turbofan engine fails and q
 
 | Model | Input context | Test RMSE | 90% CI Coverage | NASA Score |
 |---|---|---|---|---|
-| Random Forest | 1-cycle snapshot | 50.41 | — | 187925 |
+| Random Forest | 1-cycle snapshot | 16.57 | — | 811 |
 | LSTM (point) | 30-cycle window | 13.80 | — | 352 |
 | LSTM-Quantile (p50) | 30-cycle window | 14.48 | 93.6% | 460 |
 
@@ -30,7 +30,7 @@ Predicting how many operating cycles remain before a turbofan engine fails and q
 
 1. *Random Forest* — baseline on the last observed cycle.
 2. *LSTM (point estimate)* — sequence model on 30-cycle rolling windows.
-3. *LSTM + quantile regression* — adds p5 / p50 / p95 outputs, trained with a pinball loss plus an MSE anchor on the median to prevent quantile collapse. Quantiles are sorted in the forward pass to enforce p5 ≤ p50 ≤ p95.
+3. *LSTM with quantile regression* — adds p5 / p50 / p95 outputs, trained with a pinball loss plus an MSE anchor on the median to prevent quantile collapse. Quantiles are sorted in the forward pass to enforce p5 ≤ p50 ≤ p95.
 
 
 ## Reproducing
