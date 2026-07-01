@@ -1,152 +1,48 @@
-\# Predictive Maintenance: Remaining Useful Life Estimation with Uncertainty
+# Predictive Maintenance: Remaining Useful Life Estimation with Uncertainty Bounds
 
+Predicting how many operating cycles remain before a turbofan engine fails and quantifying the confidence in that prediction on the NASA C-MAPSS (FD001) dataset.
 
+**Objective:** Predict RUL with a calibrated 90% confidence interval, so maintenance engineers can act on both the estimate and its uncertainty. A baseline Random Forest is extended to an LSTM to capture sequence history, and the two are compared on RMSE and NASA Score. An LSTM with quantile regression then produces a 90% confidence bound for actionable predictions
 
-Predicting how many operating cycles remain before a turbofan engine fails —
-
-and quantifying the confidence in that prediction — on the NASA C-MAPSS
-
-(FD001) dataset.
-
-
-
-Most RUL models output a single number. This one outputs a number \*\*plus a
-
-calibrated 90% confidence interval\*\*, so a maintenance engineer can act on
-
-both the estimate and its uncertainty.
-
-
-
-!\[Per-unit RUL prediction with uncertainty band](figures/per\_unit\_trajectory.png)
-
-
-
-\## Results
-
-
+## Results
 
 | Model | Input context | Test RMSE | 90% CI Coverage | NASA Score |
-
 |---|---|---|---|---|
+| Random Forest | 1-cycle snapshot | 50.41 | — | 187925 |
+| LSTM (point) | 30-cycle window | 13.80 | — | 352 |
+| LSTM-Quantile (p50) | 30-cycle window | 14.48 | 93.6% | 460 |
 
-| Random Forest | 1-cycle snapshot | ⚠️\[fill] | — | ⚠️\[fill] |
+*NASA score penalizes late predictions ~10× more than early ones, reflecting the real operational cost of a missed failure. Lower is better.*
 
-| LSTM (point) | 30-cycle window | ⚠️13.61 | — | ⚠️353 |
+## Takeaways
 
-| LSTM-Quantile (p50) | 30-cycle window | ⚠️13.83 | ⚠️93.6% | ⚠️383 |
+- The LSTM's 30-cycle window substantially beats the single-snapshot Random Forest baseline.
+- Quantile LSTM matches the point model's accuracy while producing calibrated intervals.
+- Model hits close to the 90% target overall, but tighter in the long-life plateau and looser in the mid-life degradation window — where it matters most. Stated plainly rather than averaged away.
 
+## Approach
 
+**Data & feature selection.** 21 sensors + 3 operational settings per cycle. Ten constant / near-constant channels carry no degradation signal and are dropped, reducing noise with no information loss.
 
-\*NASA score penalizes late predictions \~10× more than early ones, reflecting
+**RUL labeling.** Targets are capped with a piecewise-linear function at 125 cycles — engines look healthy and indistinguishable early in life, so learning capacity is concentrated on the critical near-failure window.
 
-the real operational cost of a missed failure. Lower is better.\*
+**Models.**
 
-
-
-\*\*Takeaways\*\*
-
-\- Sequence context matters: the LSTM's 30-cycle window substantially beats the
-
-&#x20; single-snapshot Random Forest baseline.
-
-\- Adding uncertainty is nearly free: the quantile LSTM matches the point
-
-&#x20; model's accuracy while producing calibrated intervals.
-
-\- Coverage is close to the 90% target — though not uniform across the RUL
-
-&#x20; range (tighter in the long-life plateau, looser in the mid-life degradation
-
-&#x20; window, where it matters most). Stated honestly rather than averaged away.
+1. *Random Forest* — baseline on the last observed cycle.
+2. *LSTM (point estimate)* — sequence model on 30-cycle rolling windows.
+3. *LSTM + quantile regression* — adds p5 / p50 / p95 outputs, trained with a pinball loss plus an MSE anchor on the median to prevent quantile collapse. Quantiles are sorted in the forward pass to enforce p5 ≤ p50 ≤ p95.
 
 
-
-\## Approach
-
-
-
-\*\*Data \& feature selection.\*\* 21 sensors + 3 operational settings per cycle.
-
-Ten constant / near-constant channels carry no degradation signal and are
-
-dropped, reducing noise with no information loss.
-
-
-
-\*\*RUL labeling.\*\* Targets are capped with a piecewise-linear function at 125
-
-cycles — engines look healthy and indistinguishable early in life, so learning
-
-capacity is concentrated on the critical near-failure window.
-
-
-
-\*\*Leakage-safe split.\*\* Train/validation split is \*\*by engine unit\*\*, not by
-
-row, so no engine's future cycles leak into training.
-
-
-
-\*\*Models.\*\*
-
-1\. \*Random Forest\* — fast baseline on the last observed cycle.
-
-2\. \*LSTM (point estimate)\* — sequence model on 30-cycle rolling windows.
-
-3\. \*LSTM + quantile regression\* — adds p5 / p50 / p95 outputs, trained with a
-
-&#x20;  pinball loss plus an MSE anchor on the median to prevent quantile collapse.
-
-&#x20;  Quantiles are sorted in the forward pass to enforce p5 ≤ p50 ≤ p95.
-
-
-
-\## Figures
-
-
-
-| | |
-
-|---|---|
-
-| !\[Coverage](figures/coverage\_validation.png) | !\[Predicted vs True](figures/pred\_vs\_true.png) |
-
-
-
-\## Reproducing
-
-
+## Reproducing
 
 ```bash
-
 pip install -r requirements.txt
-
-\# Download the FD001 data into data/ — see data/README.md
-
-jupyter notebook notebooks/rul\_estimation.ipynb
-
+# Download the FD001 data into data/ — see data/README.md
+jupyter notebook notebooks/cmapss.ipynb
 ```
 
 
+## Limitations & next steps
 
-\## Limitations \& next steps
-
-\- FD001 is a single operating condition and fault mode. FD002–FD004 add
-
-&#x20; multi-condition complexity and would test generalization.
-
-\- Prediction intervals are wide for long-life engines; \*\*conformal prediction\*\*
-
-&#x20; could tighten them with formal coverage guarantees.
-
-\- Production deployment would stream live sensor data through a 30-cycle buffer
-
-&#x20; and emit p50 RUL plus an alert flag in real time.
-
-
-
-\## Stack
-
-Python · PyTorch · scikit-learn · pandas · matplotlib
-
+- FD001 is a single operating condition and fault mode. FD002–FD004 add multi-condition complexity and would test generalization.
+- Production deployment would stream live sensor data through a 30-cycle buffer and emit p50 RUL plus an alert flag in real time.
