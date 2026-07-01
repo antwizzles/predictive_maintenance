@@ -6,7 +6,6 @@ Conditions: ONE (Sea Level)
 Fault Modes: ONE (HPC Degradation)
 
 
-
 The dataset is not committed to this repo. Download it from the NASA Prognostics Data Repository using the following link:
 
 Download: https://phm-datasets.s3.amazonaws.com/NASA/6.+Turbofan+Engine+Degradation+Simulation+Data+Set.zip
