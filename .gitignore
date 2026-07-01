@@ -1,1 +1,18 @@
+# Data — not committed; see data/README.md for download instructions
+data/*.txt
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# R
 .Rhistory
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
